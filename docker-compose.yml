@@ -1,0 +1,18 @@
+version: '2.4'
+
+services:
+  f1_tracker:
+    build: 
+      context: ./
+      dockerfile: ./Dockerfile
+    image: f1_tracker:latest
+    container_name: f1_tracker
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+    environment:
+        TG_TOKEN: "${TG_TOKEN}"
+        TZ_OFFSET: 2
