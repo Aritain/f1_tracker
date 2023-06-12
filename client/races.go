@@ -10,18 +10,18 @@ import (
 )
 
 type RacesMRData struct {
-	XMLName   xml.Name  `xml:"MRData"`
-	RaceTable RaceTable `xml:"RaceTable"`
+    XMLName   xml.Name  `xml:"MRData"`
+    RaceTable RaceTable `xml:"RaceTable"`
 }
 
 type RaceTable struct {
-	XMLName  xml.Name `xml:"RaceTable"`
-	Race     []Race   `xml:"Race"`
+    XMLName  xml.Name `xml:"RaceTable"`
+    Race     []Race   `xml:"Race"`
 }
 
 type Race struct {
-	XMLName        xml.Name `xml:"Race"`
-	RaceName       string   `xml:"RaceName"`
+    XMLName        xml.Name `xml:"Race"`
+    RaceName       string   `xml:"RaceName"`
     Circuit        Circuit  `xml:"Circuit"`
     Date           string   `xml:"Date"`
     Time           string   `xml:"Time"`
