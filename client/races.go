@@ -1,7 +1,7 @@
 package client
 
 import (
-	"log"
+    "log"
     "os"
     "time"
     "strconv"
@@ -50,7 +50,7 @@ type PreRace struct {
 
 
 var countryFlagMap = map[string]string{
-	"Japan": emoji.Parse(":jp:"),
+    "Japan": emoji.Parse(":jp:"),
     "Saudi Arabia": emoji.Parse(":saudi_arabia:"),
     "Azerbaijan": emoji.Parse(":azerbaijan:"),
     "USA": emoji.Parse(":us:"),
@@ -74,11 +74,11 @@ var countryFlagMap = map[string]string{
 
 func RacesParseData(requestBody []byte) string {
 
-	_, status := os.LookupEnv("TZ_OFFSET")
-	if status == false {
-		log.Printf("TZ_OFFSET env is missing.")
-		os.Exit(1)
-	}
+    _, status := os.LookupEnv("TZ_OFFSET")
+    if status == false {
+        log.Printf("TZ_OFFSET env is missing.")
+        os.Exit(1)
+    }
 
     tzOffset, _ := strconv.Atoi(os.Getenv("TZ_OFFSET"))
 
@@ -112,5 +112,5 @@ func RacesParseData(requestBody []byte) string {
             break
         }
     }
-	return response
+    return response
 }
