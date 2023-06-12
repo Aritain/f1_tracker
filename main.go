@@ -36,7 +36,6 @@ func main() {
         }
 
         msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
-        log.Printf("%s", update.Message.Command())
         msg.Text = client.FetchData(update.Message.Command())
         msg.ParseMode = "markdown"
 
