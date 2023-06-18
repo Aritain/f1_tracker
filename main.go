@@ -1,7 +1,7 @@
 package main
 
 import (
-    "github.com/Syfaro/telegram-bot-api"
+    "github.com/go-telegram-bot-api/telegram-bot-api/v5"
     "log"
     "os"
     "client/client"
@@ -25,7 +25,7 @@ func main() {
     // Create chan for telegram updates
     var ucfg tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)
     ucfg.Timeout = 60
-    updates, _ := bot.GetUpdatesChan(ucfg)
+    updates := bot.GetUpdatesChan(ucfg)
     for update := range updates {
         if update.Message == nil { // ignore any non-Message updates
             continue
