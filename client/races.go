@@ -5,6 +5,7 @@ import (
     "os"
     "time"
     "strconv"
+    "reflect"
     "encoding/xml"
     "github.com/enescakir/emoji"
 )
@@ -28,6 +29,7 @@ type Race struct {
     FirstPractice  PreRace  `xml:"FirstPractice"`
     SecondPractice PreRace  `xml:"SecondPractice"`
     ThirdPractice  PreRace  `xml:"ThirdPractice"`
+    Sprint         PreRace  `xml:"Sprint,omitempty"`
     Qualifying     PreRace  `xml:"Qualifying"`
 }
 
@@ -69,6 +71,7 @@ var countryFlagMap = map[string]string{
     "Brazil": emoji.Parse(":brazil:"),
     "UAE": emoji.Parse(":united_arab_emirates:"),
     "United States": emoji.Parse(":us:"),
+    "Bahrain": emoji.Parse(":bahrain:"),
 }
 
 
@@ -86,6 +89,10 @@ func RacesParseData(requestBody []byte) string {
         raceDate = raceDate.AddDate(0, 0, 1)
         currentDate := time.Now()
 
+        if hasSprintSet(elem) {
+            elem.Sprint.Time = ParseTime(elem.Sprint.Time)
+        }
+
         elem.Time = ParseTime(elem.Time)
         elem.Qualifying.Time = ParseTime(elem.Qualifying.Time)
 
@@ -99,8 +106,11 @@ func RacesParseData(requestBody []byte) string {
             response = "Next race will take place in:\n" + 
                 flagEmoji + " " + elem.Circuit.Location.Country + 
                 " " + elem.Circuit.Location.Locality + "\nQualification: " + 
-                elem.Qualifying.Date + " " + elem.Qualifying.Time + "\nRace: " +
-                elem.Date + " " + elem.Time
+                elem.Qualifying.Date + " " + elem.Qualifying.Time + "\n"
+            if hasSprintSet(elem) {
+                response = response + "Sprint: " + elem.Sprint.Date + " " + elem.Sprint.Time + "\n"
+            }
+            response = response + "Race: " + elem.Date + " " + elem.Time
             break
         }
     }
@@ -120,4 +130,9 @@ func ParseTime (rawTime string) string {
     adjustedTime = adjustedTime.Add(time.Duration(tzOffset) * time.Hour)
     return adjustedTime.Format("15:04:05")
 
+}
+
+func hasSprintSet(race Race) bool {
+    zeroValue := reflect.Zero(reflect.TypeOf(race.Sprint)).Interface()
+    return !reflect.DeepEqual(race.Sprint, zeroValue)
 }
