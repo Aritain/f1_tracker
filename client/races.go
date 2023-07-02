@@ -90,11 +90,12 @@ func RacesParseData(requestBody []byte) string {
         currentDate := time.Now()
 
         if hasSprintSet(elem) {
-            elem.Sprint.Time = ParseTime(elem.Sprint.Time)
+            elem.Sprint.Time = ParseTime(elem.Sprint.Time, false)
+            elem.SecondPractice.Time = ParseTime(elem.SecondPractice.Time, true)
         }
 
-        elem.Time = ParseTime(elem.Time)
-        elem.Qualifying.Time = ParseTime(elem.Qualifying.Time)
+        elem.Time = ParseTime(elem.Time, false)
+        elem.Qualifying.Time = ParseTime(elem.Qualifying.Time, false)
 
         flagEmoji, foundEmoji := countryFlagMap[elem.Circuit.Location.Country]
 
@@ -105,19 +106,21 @@ func RacesParseData(requestBody []byte) string {
         if currentDate.Before(raceDate) {
             response = "Next race will take place in:\n" + 
                 flagEmoji + " " + elem.Circuit.Location.Country + 
-                " " + elem.Circuit.Location.Locality + "\nQualification: " + 
+                " " + elem.Circuit.Location.Locality + "\n⏱ Qualification: " + 
                 elem.Qualifying.Date + " " + elem.Qualifying.Time + "\n"
             if hasSprintSet(elem) {
-                response = response + "Sprint: " + elem.Sprint.Date + " " + elem.Sprint.Time + "\n"
+                response = response + "🔫 Sprint Shootout: " + elem.SecondPractice.Date + 
+                    " " + elem.SecondPractice.Time + "\n"
+                response = response + "🏎 Sprint: " + elem.Sprint.Date + " " + elem.Sprint.Time + "\n"
             }
-            response = response + "Race: " + elem.Date + " " + elem.Time
+            response = response + "🏁 Race: " + elem.Date + " " + elem.Time
             break
         }
     }
     return response
 }
 
-func ParseTime (rawTime string) string {
+func ParseTime (rawTime string, fixTime bool) string {
 
     _, status := os.LookupEnv("TZ_OFFSET")
     if status == false {
@@ -128,6 +131,10 @@ func ParseTime (rawTime string) string {
 
     adjustedTime, _ := time.Parse("15:04:05Z", rawTime)
     adjustedTime = adjustedTime.Add(time.Duration(tzOffset) * time.Hour)
+    // Adjust time for Sprint Shootouts because API is reporting it with incorrect time
+    if fixTime == true {
+        adjustedTime = adjustedTime.Add(-30 * time.Minute)
+    }
     return adjustedTime.Format("15:04:05")
 
 }
