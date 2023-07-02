@@ -7,6 +7,10 @@ import (
     "client/client"
 )
 
+```
+TODO:
+1. Adjust time logic so the next race could be fetched right after previous one ends
+```
 
 func main() {
 
