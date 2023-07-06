@@ -7,10 +7,10 @@ import (
     "client/client"
 )
 
-```
+/*
 TODO:
-1. Adjust time logic so the next race could be fetched right after previous one ends
-```
+1. Implement bot subscription which would send notifications about upcoming events to user
+*/
 
 func main() {
 
@@ -42,8 +42,10 @@ func main() {
         msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
         msg.Text = client.FetchData(update.Message.Command())
         msg.ParseMode = "markdown"
-
-
+        if len(msg.Text) == 0 {
+            log.Printf("Failed to fetch data for user request")
+            msg.Text = "Failed to fetch data for some reason"
+        }
         if _, err := bot.Send(msg); err != nil {
             log.Panic(err)
         }
