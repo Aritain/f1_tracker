@@ -103,6 +103,7 @@ func RacesParseData(requestBody []byte) string {
         raceEndTime = elem.Date + " " +  raceEndTime
         raceEnd, _ := time.Parse("2006-01-02 15:04:05", raceEndTime)
         currentDate := time.Now()
+        currentDate = currentDate.Add(time.Duration(tzOffset) * time.Hour)
 
         elem.Time = ParseTime(elem.Time, false, tzOffset)
         elem.Qualifying.Time = ParseTime(elem.Qualifying.Time, false, tzOffset)
