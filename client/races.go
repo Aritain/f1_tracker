@@ -98,8 +98,8 @@ func RacesParseData(requestBody []byte) string {
             elem.SecondPractice.Time = ParseTime(elem.SecondPractice.Time, true, tzOffset)
         }
 
-        // Races are usually two hours longs
-        raceEndTime = ParseTime(elem.Time, false, tzOffset+2)
+        // Races are usually two hours longs, but add just one hour
+        raceEndTime = ParseTime(elem.Time, false, tzOffset+1)
         raceEndTime = elem.Date + " " +  raceEndTime
         raceEnd, _ := time.Parse("2006-01-02 15:04:05", raceEndTime)
         currentDate := time.Now()
