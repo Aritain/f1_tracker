@@ -1,6 +1,7 @@
 package client
 
 import (
+    "fmt"
     "log"
     "os"
     "time"
@@ -115,16 +116,27 @@ func RacesParseData(requestBody []byte) string {
         }
 
         if currentDate.Before(raceEnd) {
-            response = "Next race will take place in:\n" + 
-                flagEmoji + " " + elem.Circuit.Location.Country + 
-                " " + elem.Circuit.Location.Locality + "\n⏱ Qualifying: " + 
-                elem.Qualifying.Date + " " + elem.Qualifying.Time + "\n"
+            response = fmt.Sprintf("Next race will take place in:\n%s %s %s\n⏱ Qualifying - %s at %s\n",
+                flagEmoji,
+                elem.Circuit.Location.Country,
+                elem.Circuit.Location.Locality,
+                fmtDate(elem.Qualifying.Date),
+                rmSeconds(elem.Qualifying.Time),
+            )
             if hasSprintSet(elem) {
-                response = response + "🔫 Sprint Shootout: " + elem.SecondPractice.Date + 
-                    " " + elem.SecondPractice.Time + "\n"
-                response = response + "🏎 Sprint: " + elem.Sprint.Date + " " + elem.Sprint.Time + "\n"
+                response = response + fmt.Sprintf("🔫 Sprint Shootout - %s at %s \n",
+                    fmtDate(elem.SecondPractice.Date),
+                    rmSeconds(elem.SecondPractice.Time),
+                )
+                response = response + fmt.Sprintf("🏎 Sprint - %s at %s \n",
+                    fmtDate(elem.Sprint.Date),
+                    rmSeconds(elem.Sprint.Time),
+                )
             }
-            response = response + "🏁 Race: " + elem.Date + " " + elem.Time
+            response = response + fmt.Sprintf("🏁 Race - %s at %s",
+                fmtDate(elem.Date),
+                rmSeconds(elem.Time),
+            )
             break
         }
     }
@@ -141,6 +153,16 @@ func ParseTime (rawTime string, fixTime bool, tzOffset int) string {
     }
     return adjustedTime.Format("15:04:05")
 
+}
+
+func rmSeconds(longTime string) string {
+    return longTime[:len(longTime)-3]
+}
+
+func fmtDate(longDate string) string {
+    longDate = longDate[5:]
+    monthValue, _ := strconv.Atoi(longDate[:2])
+    return time.Month(monthValue).String() + " " + longDate[3:]
 }
 
 func hasSprintSet(race Race) bool {
