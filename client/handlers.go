@@ -6,9 +6,9 @@ import (
     "net/http"
 )
 
-const TEAMS_URL = "http://ergast.com/api/f1/current/constructorStandings"
-const DRIVERS_URL = "http://ergast.com/api/f1/current/driverStandings"
-const RACES_URL ="http://ergast.com/api/f1/current"
+const TEAMS_URL = "http://ergast.com/api/f1/2024/constructorStandings"
+const DRIVERS_URL = "http://ergast.com/api/f1/2024/driverStandings"
+const RACES_URL ="http://ergast.com/api/f1/2024"
 
 func FetchData (userRequest string) string {
     var response string
