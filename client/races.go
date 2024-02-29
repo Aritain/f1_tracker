@@ -95,19 +95,19 @@ func RacesParseData(requestBody []byte) string {
     
     for _, elem := range racesData.RaceTable.Race {
         if hasSprintSet(elem) {
-            elem.Sprint.Time = ParseTime(elem.Sprint.Time, false, tzOffset)
-            elem.SecondPractice.Time = ParseTime(elem.SecondPractice.Time, true, tzOffset)
+            elem.Sprint.Time = ParseTime(elem.Sprint.Time, false, true, tzOffset)
+            elem.SecondPractice.Time = ParseTime(elem.SecondPractice.Time, true, true, tzOffset)
         }
 
         // Races are usually two hours longs, but add just one hour
-        raceEndTime = ParseTime(elem.Time, false, tzOffset+1)
+        raceEndTime = ParseTime(elem.Time, false, false, tzOffset+1)
         raceEndTime = elem.Date + " " +  raceEndTime
-        raceEnd, _ := time.Parse("2006-01-02 15:04:05", raceEndTime)
+        raceEnd, _ := time.Parse("2006-01-02 15:04", raceEndTime)
         currentDate := time.Now()
         currentDate = currentDate.Add(time.Duration(tzOffset) * time.Hour)
 
-        elem.Time = ParseTime(elem.Time, false, tzOffset)
-        elem.Qualifying.Time = ParseTime(elem.Qualifying.Time, false, tzOffset)
+        elem.Time = ParseTime(elem.Time, false, true, tzOffset)
+        elem.Qualifying.Time = ParseTime(elem.Qualifying.Time, false, true, tzOffset)
 
         flagEmoji, foundEmoji := countryFlagMap[elem.Circuit.Location.Country]
 
@@ -121,21 +121,21 @@ func RacesParseData(requestBody []byte) string {
                 elem.Circuit.Location.Country,
                 elem.Circuit.Location.Locality,
                 fmtDate(elem.Qualifying.Date),
-                rmSeconds(elem.Qualifying.Time),
+                elem.Qualifying.Time,
             )
             if hasSprintSet(elem) {
                 response = response + fmt.Sprintf("🔫 Sprint Shootout - %s at %s \n",
                     fmtDate(elem.SecondPractice.Date),
-                    rmSeconds(elem.SecondPractice.Time),
+                    elem.SecondPractice.Time,
                 )
                 response = response + fmt.Sprintf("🏎 Sprint - %s at %s \n",
                     fmtDate(elem.Sprint.Date),
-                    rmSeconds(elem.Sprint.Time),
+                    elem.Sprint.Time,
                 )
             }
             response = response + fmt.Sprintf("🏁 Race - %s at %s",
                 fmtDate(elem.Date),
-                rmSeconds(elem.Time),
+                elem.Time,
             )
             break
         }
@@ -143,16 +143,26 @@ func RacesParseData(requestBody []byte) string {
     return response
 }
 
-func ParseTime (rawTime string, fixTime bool, tzOffset int) string {
-
+func ParseTime (rawTime string, fixTime bool, appendTime bool, tzOffset int) string {
+    var processedTime string
     adjustedTime, _ := time.Parse("15:04:05Z", rawTime)
     adjustedTime = adjustedTime.Add(time.Duration(tzOffset) * time.Hour)
     // Adjust time for Sprint Shootouts because API is reporting it with incorrect time
     if fixTime == true {
         adjustedTime = adjustedTime.Add(-30 * time.Minute)
     }
-    return adjustedTime.Format("15:04:05")
+    processedTime = rmSeconds(adjustedTime.Format("15:04:05"))
+    if appendTime == true {
+        adjustedTime = adjustedTime.Add(-1 * time.Hour)
+        processedTime = fmt.Sprintf("%s%s %s%s",
+            countryFlagMap["Spain"],
+            processedTime,
+            countryFlagMap["UK"],
+            rmSeconds(adjustedTime.Format("15:04:05")),
+        )
+    }
 
+    return processedTime
 }
 
 func rmSeconds(longTime string) string {
