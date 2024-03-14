@@ -73,6 +73,7 @@ var countryFlagMap = map[string]string{
     "UAE": emoji.Parse(":united_arab_emirates:"),
     "United States": emoji.Parse(":us:"),
     "Bahrain": emoji.Parse(":bahrain:"),
+    "Australia": emoji.Parse(":australia:"),
 }
 
 
