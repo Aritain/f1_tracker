@@ -74,6 +74,7 @@ var countryFlagMap = map[string]string{
     "United States": emoji.Parse(":us:"),
     "Bahrain": emoji.Parse(":bahrain:"),
     "Australia": emoji.Parse(":australia:"),
+    "China": emoji.Parse(":flag-cn:"),
 }
 
 
