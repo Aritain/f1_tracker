@@ -118,12 +118,10 @@ func RacesParseData(requestBody []byte) string {
         }
 
         if currentDate.Before(raceEnd) {
-            response = fmt.Sprintf("Next race will take place in:\n%s %s %s\n⏱ Qualifying - %s at %s\n",
+            response = fmt.Sprintf("Next race will take place in:\n%s %s %s\n",
                 flagEmoji,
                 elem.Circuit.Location.Country,
                 elem.Circuit.Location.Locality,
-                fmtDate(elem.Qualifying.Date),
-                elem.Qualifying.Time,
             )
             if hasSprintSet(elem) {
                 response = response + fmt.Sprintf("🔫 Sprint Shootout - %s at %s \n",
@@ -135,6 +133,10 @@ func RacesParseData(requestBody []byte) string {
                     elem.Sprint.Time,
                 )
             }
+            response = response + fmt.Sprintf("⏱ Qualifying - %s at %s\n",
+                fmtDate(elem.Qualifying.Date),
+                elem.Qualifying.Time,
+            )
             response = response + fmt.Sprintf("🏁 Race - %s at %s",
                 fmtDate(elem.Date),
                 elem.Time,
@@ -157,10 +159,10 @@ func ParseTime (rawTime string, fixTime bool, appendTime bool, tzOffset int) str
     if appendTime == true {
         adjustedTime = adjustedTime.Add(-1 * time.Hour)
         processedTime = fmt.Sprintf("%s%s %s%s",
-            countryFlagMap["Spain"],
-            processedTime,
             countryFlagMap["UK"],
             rmSeconds(adjustedTime.Format("15:04:05")),
+            countryFlagMap["Spain"],
+            processedTime,
         )
     }
 
