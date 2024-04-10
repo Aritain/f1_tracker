@@ -98,7 +98,7 @@ func RacesParseData(requestBody []byte) string {
     for _, elem := range racesData.RaceTable.Race {
         if hasSprintSet(elem) {
             elem.Sprint.Time = ParseTime(elem.Sprint.Time, false, true, tzOffset)
-            elem.SecondPractice.Time = ParseTime(elem.SecondPractice.Time, true, true, tzOffset)
+            elem.SecondPractice.Time = ParseTime(elem.SecondPractice.Time, false, true, tzOffset)
         }
 
         // Races are usually two hours longs, but add just one hour
