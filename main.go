@@ -24,7 +24,7 @@ func main() {
     if err != nil {
         log.Panic(err)
     }
-    bot.Debug = true
+    bot.Debug = false
 
     // Create chan for telegram updates
     var ucfg tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)

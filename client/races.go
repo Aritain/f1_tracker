@@ -3,52 +3,65 @@ package client
 import (
     "fmt"
     "log"
-    "os"
     "time"
     "strconv"
     "reflect"
-    "encoding/xml"
+    "encoding/json"
     "github.com/enescakir/emoji"
 )
 
+type RacesResponse struct {
+	MRData RacesMRData `json:"MRData"`
+}
+
 type RacesMRData struct {
-    XMLName   xml.Name  `xml:"MRData"`
-    RaceTable RaceTable `xml:"RaceTable"`
+	XMLNS     string    `json:"xmlns"`
+	Series    string    `json:"series"`
+	URL       string    `json:"url"`
+	Limit     string    `json:"limit"`
+	Offset    string    `json:"offset"`
+	Total     string    `json:"total"`
+	RaceTable RaceTable `json:"RaceTable"`
 }
 
 type RaceTable struct {
-    XMLName  xml.Name `xml:"RaceTable"`
-    Race     []Race   `xml:"Race"`
+	Season string `json:"season"`
+	Race  []Race  `json:"Races"`
 }
 
 type Race struct {
-    XMLName        xml.Name `xml:"Race"`
-    RaceName       string   `xml:"RaceName"`
-    Circuit        Circuit  `xml:"Circuit"`
-    Date           string   `xml:"Date"`
-    Time           string   `xml:"Time"`
-    FirstPractice  PreRace  `xml:"FirstPractice"`
-    SecondPractice PreRace  `xml:"SecondPractice"`
-    ThirdPractice  PreRace  `xml:"ThirdPractice"`
-    Sprint         PreRace  `xml:"Sprint,omitempty"`
-    Qualifying     PreRace  `xml:"Qualifying"`
+	Season           string  `json:"season"`
+	Round            string  `json:"round"`
+	URL              string  `json:"url"`
+	RaceName         string  `json:"raceName"`
+	Circuit          Circuit `json:"Circuit"`
+	Date             string  `json:"date"`
+	Time             string  `json:"time"`
+	FirstPractice    Session `json:"FirstPractice"`
+	SecondPractice   Session `json:"SecondPractice,omitempty"`
+	ThirdPractice    Session `json:"ThirdPractice,omitempty"`
+    Sprint           Session `json:"Sprint,omitempty"`
+	Qualifying       Session `json:"Qualifying"`
+    SprintQualifying Session `json:"SprintQualifying,omitempty"`
 }
 
 type Circuit struct {
-    CircuitId   string   `xml:"circuitId"`
-    URL         string   `xml:"url"`
-    CircuitName string   `xml:"CircuitName"`
-    Location    Location `xml:"Location"`
+	CircuitID   string   `json:"circuitId"`
+	URL         string   `json:"url"`
+	CircuitName string   `json:"circuitName"`
+	Location    Location `json:"Location"`
 }
 
 type Location struct {
-    Locality string `xml:"Locality"`
-    Country  string `xml:"Country"`
+	Lat      string `json:"lat"`
+	Long     string `json:"long"`
+	Locality string `json:"locality"`
+	Country  string `json:"country"`
 }
 
-type PreRace struct {
-    Date string `xml:"Date"`
-    Time string `xml:"Time"`
+type Session struct {
+	Date string `json:"date"`
+	Time string `json:"time"`
 }
 
 
@@ -80,36 +93,43 @@ var countryFlagMap = map[string]string{
 
 func RacesParseData(requestBody []byte) string {
 
-    _, status := os.LookupEnv("TZ_OFFSET")
-    if status == false {
-        log.Printf("TZ_OFFSET env is missing.")
-        os.Exit(1)
-    }
-    tzOffset, _ := strconv.Atoi(os.Getenv("TZ_OFFSET"))
-
     var response string
-    var racesData RacesMRData
-    var raceEndTime string
-    err := xml.Unmarshal(requestBody, &racesData)
+    var racesData RacesResponse
+    var raceStartTime string
+    var raceTime bool
+    TBA := "\nTo be announced"
+    err := json.Unmarshal(requestBody, &racesData)
     if err != nil {
         log.Println(err)
     }
-    
-    for _, elem := range racesData.RaceTable.Race {
+
+	englishLocation, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		fmt.Println("Error loading time zone:", err)
+		return "Failed to fetch timezone"
+	}
+
+    for _, elem := range racesData.MRData.RaceTable.Race {
+        raceTime = true
         if hasSprintSet(elem) {
-            elem.Sprint.Time = ParseTime(elem.Sprint.Time, false, true, tzOffset)
-            elem.SecondPractice.Time = ParseTime(elem.SecondPractice.Time, false, true, tzOffset)
+            elem.Sprint.Time = ParseTime(elem.Date, elem.Sprint.Time, false)
+            elem.SprintQualifying.Time = ParseTime(elem.Date, elem.SprintQualifying.Time, false)
         }
 
-        // Races are usually two hours longs, but add just one hour
-        raceEndTime = ParseTime(elem.Time, false, false, tzOffset+1)
-        raceEndTime = elem.Date + " " +  raceEndTime
-        raceEnd, _ := time.Parse("2006-01-02 15:04", raceEndTime)
+        if len(elem.Time) == 0 {
+            elem.Time = "00:00:00Z"
+            raceTime = false
+        }
+        raceStartTime = elem.Date + "T" + elem.Time
+        raceStart, _ := time.Parse(time.RFC3339, raceStartTime)
+        englishStartTime := raceStart.In(englishLocation)
         currentDate := time.Now()
-        currentDate = currentDate.Add(time.Duration(tzOffset) * time.Hour)
 
-        elem.Time = ParseTime(elem.Time, false, true, tzOffset)
-        elem.Qualifying.Time = ParseTime(elem.Qualifying.Time, false, true, tzOffset)
+        // Uncomment for testing
+        //currentDate, _ := time.Parse("2006-01-02 15:04:05", "2024-12-23 05:00:00")
+
+        elem.Time = ParseTime(elem.Date, elem.Time, false)
+        elem.Qualifying.Time = ParseTime(elem.Date, elem.Qualifying.Time, false)
 
         flagEmoji, foundEmoji := countryFlagMap[elem.Circuit.Location.Country]
 
@@ -117,67 +137,99 @@ func RacesParseData(requestBody []byte) string {
             flagEmoji = "🏴‍☠️"
         }
 
-        if currentDate.Before(raceEnd) {
+        if currentDate.Before(englishStartTime) {
+            // Hacky, maybe there is a way to make it better
+            if raceTime == false {
+                elem.Qualifying.Time = TBA
+                elem.Time = TBA
+            }
             response = fmt.Sprintf("Next race will take place in:\n%s %s %s\n",
                 flagEmoji,
                 elem.Circuit.Location.Country,
                 elem.Circuit.Location.Locality,
             )
             if hasSprintSet(elem) {
-                response = response + fmt.Sprintf("🔫 Sprint Shootout - %s at %s \n",
-                    fmtDate(elem.SecondPractice.Date),
-                    elem.SecondPractice.Time,
+                // Hacky, maybe there is a way to make it better
+                if raceTime == false {
+                    elem.SprintQualifying.Time = TBA
+                    elem.Sprint.Time = TBA
+                }
+                response = response + fmt.Sprintf("\n🔫 Sprint Shootout - %s%s \n",
+                    fmtDate(elem.SprintQualifying.Date),
+                    elem.SprintQualifying.Time,
                 )
-                response = response + fmt.Sprintf("🏎 Sprint - %s at %s \n",
+                response = response + fmt.Sprintf("\n🏎 Sprint - %s%s \n",
                     fmtDate(elem.Sprint.Date),
                     elem.Sprint.Time,
                 )
             }
-            response = response + fmt.Sprintf("⏱ Qualifying - %s at %s\n",
+            response = response + fmt.Sprintf("\n⏱ Qualifying - %s%s\n",
                 fmtDate(elem.Qualifying.Date),
                 elem.Qualifying.Time,
             )
-            response = response + fmt.Sprintf("🏁 Race - %s at %s",
+            response = response + fmt.Sprintf("\n🏁 Race - %s%s",
                 fmtDate(elem.Date),
                 elem.Time,
             )
             break
         }
     }
+    if len(response) == 0 {
+        response = "No more races this year 😭"
+    }
     return response
 }
 
-func ParseTime (rawTime string, fixTime bool, appendTime bool, tzOffset int) string {
+
+func ParseTime (rawDate string, rawTime string, fixTime bool) string {
+	spanishLocation, err := time.LoadLocation("Europe/Madrid")
+	if err != nil {
+		fmt.Println("Error loading time zone:", err)
+		return "Failed to fetch timezone"
+	}
+
+	englishLocation, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		fmt.Println("Error loading time zone:", err)
+		return "Failed to fetch timezone"
+	}
+
     var processedTime string
-    adjustedTime, _ := time.Parse("15:04:05Z", rawTime)
-    adjustedTime = adjustedTime.Add(time.Duration(tzOffset) * time.Hour)
+    // Adjust date and time to follow this format for parsing - 2025-06-01T15:04:05Z
+    dateTime := rawDate + "T" + rawTime
+    adjustedTime, _ := time.Parse(time.RFC3339, dateTime)
+    // Probably not needed anymore, TODO - verify later this year
     // Adjust time for Sprint Shootouts because API is reporting it with incorrect time
-    if fixTime == true {
+    /*if fixTime == true {
         adjustedTime = adjustedTime.Add(-30 * time.Minute)
-    }
-    processedTime = rmSeconds(adjustedTime.Format("15:04:05"))
-    if appendTime == true {
-        adjustedTime = adjustedTime.Add(-1 * time.Hour)
-        processedTime = fmt.Sprintf("%s%s %s%s",
-            countryFlagMap["UK"],
-            rmSeconds(adjustedTime.Format("15:04:05")),
-            countryFlagMap["Spain"],
-            processedTime,
-        )
-    }
+    }*/
+    
+    // Both these valuse come with following format - 2024-10-20 23:00:00 +0100 BST
+    spanishTime := adjustedTime.In(spanishLocation)
+    englishTime := adjustedTime.In(englishLocation)
+
+    processedTime = fmt.Sprintf("\n%s%s\n%s%s",
+        countryFlagMap["UK"],
+        englishTime.Format("15:04"),
+        countryFlagMap["Spain"],
+        spanishTime.Format("15:04"),
+    )
 
     return processedTime
 }
 
+
 func rmSeconds(longTime string) string {
     return longTime[:len(longTime)-3]
 }
+
 
 func fmtDate(longDate string) string {
     longDate = longDate[5:]
     monthValue, _ := strconv.Atoi(longDate[:2])
     return time.Month(monthValue).String() + " " + longDate[3:]
 }
+
 
 func hasSprintSet(race Race) bool {
     zeroValue := reflect.Zero(reflect.TypeOf(race.Sprint)).Interface()

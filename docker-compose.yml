@@ -15,4 +15,3 @@ services:
         max-file: "2"
     environment:
         TG_TOKEN: "${TG_TOKEN}"
-        TZ_OFFSET: ${TZ_OFFSET}
