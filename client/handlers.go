@@ -4,22 +4,31 @@ import (
     "log"
     "io/ioutil"
     "net/http"
+    "strconv"
+    "time"
 )
 
-const TEAMS_URL = "http://ergast.com/api/f1/2024/constructorStandings"
-const DRIVERS_URL = "http://ergast.com/api/f1/2024/driverStandings"
-const RACES_URL ="http://ergast.com/api/f1/2024"
+// Fromat: BASE_URL + YEAR + SPECIFIC URL
+const BASE_URL = "https://api.jolpi.ca/ergast/f1/"
+const DRIVERS_URL = "/driverstandings/"
+const RACES_URL = "/races/"
+const TEAMS_URL ="/constructorstandings/"
 
 func FetchData (userRequest string) string {
     var response string
     var requestUrl string
+    year, _, _ := time.Now().Date()
+
+    // Uncomment for testing
+    //year := 2024
+    requestUrl = BASE_URL + strconv.Itoa(year)
     switch {
         case userRequest == "teams":
-            requestUrl = TEAMS_URL
+            requestUrl = requestUrl + TEAMS_URL
         case userRequest == "drivers":
-            requestUrl = DRIVERS_URL
+            requestUrl = requestUrl + DRIVERS_URL
         case userRequest == "next_race":
-            requestUrl = RACES_URL
+            requestUrl = requestUrl + RACES_URL
         default:
             response = "Command not recognised, try these:\n" +
                 "/drivers - show drivers leaderboard\n" +
@@ -27,17 +36,15 @@ func FetchData (userRequest string) string {
                 "/next\\_race - show next race information\n"
             return response
     }
-
     resp, err := http.Get(requestUrl)
     if err != nil {
-        log.Println("error")
+        log.Println(err)
     }
 
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
       log.Println(err)
     }
-
     switch {
         case userRequest == "teams":
             response = TeamsParseData(body)

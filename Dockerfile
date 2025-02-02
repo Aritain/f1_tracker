@@ -8,4 +8,5 @@ RUN go build -o /f1_tracker
 
 FROM alpine:3.16
 COPY --from=app-builder /f1_tracker /f1_tracker
+RUN apk add tzdata
 ENTRYPOINT ["/f1_tracker"]

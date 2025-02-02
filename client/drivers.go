@@ -2,63 +2,75 @@ package client
 
 import (
     "log"
-    "encoding/xml"
+    "encoding/json"
 )
 
-type DriversMRData struct {
-    XMLName        xml.Name             `xml:"MRData"`
-    StandingsTable DriverStandingsTable `xml:"StandingsTable"`
+type DriversResponse struct {
+	MRData DriverMRData `json:"MRData"`
+}
+
+type DriverMRData struct {
+	XMLNS          string         `json:"xmlns"`
+	Series         string         `json:"series"`
+	URL            string         `json:"url"`
+	Limit          string         `json:"limit"`
+	Offset         string         `json:"offset"`
+	Total          string         `json:"total"`
+	StandingsTable DriverStandingsTable `json:"StandingsTable"`
 }
 
 type DriverStandingsTable struct {
-    XMLName       xml.Name            `xml:"StandingsTable"`
-    StandingsList DriverStandingsList `xml:"StandingsList"`
+	Season         string          `json:"season"`
+	Round          string          `json:"round"`
+	StandingsList []DriverStandingsList `json:"StandingsLists"`
 }
 
 type DriverStandingsList struct {
-    XMLName        xml.Name         `xml:"StandingsList"`
-    DriverStanding []DriverStanding `xml:"DriverStanding"`
+	Season          string            `json:"season"`
+	Round           string            `json:"round"`
+	DriverStanding []DriverStanding `json:"DriverStandings"`
 }
 
 type DriverStanding struct {
-    XMLName      xml.Name          `xml:"DriverStanding"`
-    Position     int               `xml:"position,attr"`
-    PositionText string            `xml:"positionText,attr"`
-    Points       string            `xml:"points,attr"`
-    Wins         int               `xml:"wins,attr"`
-    Driver       Driver            `xml:"Driver"`
-    Constructor  DriverConstructor `xml:"Constructor"`
+	Position      string       `json:"position"`
+	PositionText  string       `json:"positionText"`
+	Points        string       `json:"points"`
+	Wins          string       `json:"wins"`
+	Driver        Driver       `json:"Driver"`
+	Constructors  []DriverConstructor `json:"Constructors"`
 }
 
 type Driver struct {
-    XMLName       xml.Name `xml:"Driver"`
-    DriverID      string   `xml:"driverId,attr"`
-    Code          string   `xml:"code,attr"`
-    URL           string   `xml:"url,attr"`
-    PermanentNum  int      `xml:"PermanentNumber"`
-    GivenName     string   `xml:"GivenName"`
-    FamilyName    string   `xml:"FamilyName"`
-    DateOfBirth   string   `xml:"DateOfBirth"`
-    Nationality   string   `xml:"Nationality"`
+	DriverID         string `json:"driverId"`
+	PermanentNumber  string `json:"permanentNumber"`
+	Code            string `json:"code"`
+	URL             string `json:"url"`
+	GivenName       string `json:"givenName"`
+	FamilyName      string `json:"familyName"`
+	DateOfBirth     string `json:"dateOfBirth"`
+	Nationality     string `json:"nationality"`
 }
 
 type DriverConstructor struct {
-    XMLName       xml.Name `xml:"Constructor"`
-    ConstructorID string   `xml:"constructorId,attr"`
-    URL           string   `xml:"url,attr"`
-    Name          string   `xml:"Name"`
-    Nationality   string   `xml:"Nationality"`
+	ConstructorID string `json:"constructorId"`
+	URL          string `json:"url"`
+	Name         string `json:"name"`
+	Nationality  string `json:"nationality"`
 }
 
 func DriversParseData(requestBody []byte) string {
-    var driversData DriversMRData
+    var driversData DriversResponse
     response := "```\n"
-    err := xml.Unmarshal(requestBody, &driversData)
+    err := json.Unmarshal(requestBody, &driversData)
     if err != nil {
         log.Println(err)
     }
-
-    for _, elem := range driversData.StandingsTable.StandingsList.DriverStanding {
+    if len(driversData.MRData.StandingsTable.StandingsList) == 0 {
+        response = "Driver information is not available yet. Try again later 🙃"
+        return response
+    }
+    //  Magic [0] is current year, the API returns a list of StandingsLists but it always contains only 1 element
+    for _, elem := range driversData.MRData.StandingsTable.StandingsList[0].DriverStanding {
         response = response + elem.Driver.Code + " " + elem.Points + "\n"
     }
     response = response + "```"

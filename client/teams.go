@@ -3,66 +3,80 @@ package client
 import (
     "log"
     "strings"
-    "encoding/xml"
+    "encoding/json"
 )
 
+type TeamsResponse struct {
+	MRData TeamsMRData `json:"MRData"`
+}
 
 type TeamsMRData struct {
-    XMLName        xml.Name           `xml:"MRData"`
-    StandingsTable TeamStandingsTable `xml:"StandingsTable"`
+	XMLNS          string             `json:"xmlns"`
+	Series         string             `json:"series"`
+	URL            string             `json:"url"`
+	Limit          string             `json:"limit"`
+	Offset         string             `json:"offset"`
+	Total          string             `json:"total"`
+	StandingsTable TeamStandingsTable `json:"StandingsTable"`
 }
 
 type TeamStandingsTable struct {
-    XMLName       xml.Name          `xml:"StandingsTable"`
-    StandingsList TeamStandingsList `xml:"StandingsList"`
+	Season         string               `json:"season"`
+	Round          string               `json:"round"`
+	StandingsLists []TeamStandingsLists `json:"StandingsLists"`
 }
 
-type TeamStandingsList struct {
-    XMLName             xml.Name              `xml:"StandingsList"`
-    ConstructorStanding []ConstructorStanding `xml:"ConstructorStanding"`
+type TeamStandingsLists struct {
+	Season               string                 `json:"season"`
+	Round                string                 `json:"round"`
+	ConstructorStandings []ConstructorStandings `json:"ConstructorStandings"`
 }
 
-type ConstructorStanding struct {
-    XMLName      xml.Name        `xml:"ConstructorStanding"`
-    Position     int             `xml:"position,attr"`
-    PositionText string          `xml:"positionText,attr"`
-    Points       string          `xml:"points,attr"`
-    Wins         int             `xml:"wins,attr"`
-    Constructor  TeamConstructor `xml:"Constructor"`
+type ConstructorStandings struct {
+	Position     string          `json:"position"`
+	PositionText string          `json:"positionText"`
+	Points       string          `json:"points"`
+	Wins         string          `json:"wins"`
+	Constructor  TeamConstructor `json:"Constructor"`
 }
 
 type TeamConstructor struct {
-    XMLName       xml.Name `xml:"Constructor"`
-    ConstructorID string   `xml:"constructorId,attr"`
-    URL           string   `xml:"url,attr"`
-    Name          string   `xml:"Name"`
-    Nationality   string   `xml:"Nationality"`
+	ConstructorID string `json:"constructorId"`
+	URL           string `json:"url"`
+	Name          string `json:"name"`
+	Nationality   string `json:"nationality"`
 }
 
 func TeamsParseData(requestBody []byte) string {
-    var teamsData TeamsMRData
+    var teamsData TeamsResponse
     var longestTeam int
 
     response := "```\n"
-    err := xml.Unmarshal(requestBody, &teamsData)
+    err := json.Unmarshal(requestBody, &teamsData)
     if err != nil {
         log.Println(err)
     }
-
-    // Make team names a bit nicer by removing unnececary keywords
-    for index, elem := range teamsData.StandingsTable.StandingsList.ConstructorStanding {
-        teamsData.StandingsTable.StandingsList.ConstructorStanding[index].Constructor.Name =
-            strings.ReplaceAll(teamsData.StandingsTable.StandingsList.ConstructorStanding[index].Constructor.Name, "Team", "")
-        teamsData.StandingsTable.StandingsList.ConstructorStanding[index].Constructor.Name =
-            strings.ReplaceAll(teamsData.StandingsTable.StandingsList.ConstructorStanding[index].Constructor.Name, "F1", "")
-        teamsData.StandingsTable.StandingsList.ConstructorStanding[index].Constructor.Name =
-            strings.ReplaceAll(teamsData.StandingsTable.StandingsList.ConstructorStanding[index].Constructor.Name, "Team", "")
+    if len(teamsData.MRData.StandingsTable.StandingsLists) == 0 {
+        response = "Team information is not available yet. Try again later 🙃"
+        return response
+    }
+    /* 
+    Make team names a bit nicer by removing unnececary keywords, e.g. "Alpine F1 Team" -> "Alpine"
+    Magic [0] is current year, the API returns a list of StandingsLists but it always contains only 1 element
+    */
+    for index, elem := range teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings {
+        teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings[index].Constructor.Name =
+            strings.ReplaceAll(teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings[index].Constructor.Name, "Team", "")
+        teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings[index].Constructor.Name =
+            strings.ReplaceAll(teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings[index].Constructor.Name, "F1", "")
+        teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings[index].Constructor.Name =
+            strings.ReplaceAll(teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings[index].Constructor.Name, "Team", "")
         if longestTeam < len(elem.Constructor.Name) {
             longestTeam = len(elem.Constructor.Name)
         }
     }
 
-    for _, elem := range teamsData.StandingsTable.StandingsList.ConstructorStanding {
+    for _, elem := range teamsData.MRData.StandingsTable.StandingsLists[0].ConstructorStandings {
         spaces := strings.Repeat(" ", (longestTeam - len(elem.Constructor.Name)))
         response = response + elem.Constructor.Name + spaces + elem.Points + "\n"
     }
