@@ -10,9 +10,9 @@ import (
 )
 
 type RaceData struct {
-	Location   string
-	SprintInfo string
-	Sprint     string
+    Location   string
+    SprintInfo string
+    Sprint     string
     SprintES   string
     RaceInfo   string
     Race       string
