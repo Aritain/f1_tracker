@@ -15,3 +15,5 @@ services:
         max-file: "2"
     environment:
         TG_TOKEN: "${TG_TOKEN}"
+        NOTIFICATION_ID: "${NOTIFICATION_ID}"
+        NOTIFICATION_TOGGLE: "true"

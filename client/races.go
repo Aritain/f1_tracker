@@ -126,7 +126,7 @@ func RacesParseData(requestBody []byte) string {
         currentDate := time.Now()
 
         // Uncomment for testing
-        //currentDate, _ := time.Parse("2006-01-02 15:04:05", "2024-12-23 05:00:00")
+        //currentDate, _ := time.Parse("2006-01-02 15:04:05", "2024-11-25 05:00:00")
 
         elem.Time = ParseTime(elem.Date, elem.Time, false)
         elem.Qualifying.Time = ParseTime(elem.Date, elem.Qualifying.Time, false)

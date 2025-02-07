@@ -20,6 +20,12 @@ func main() {
         os.Exit(1)
     }
 
+    notificationToggle, status := os.LookupEnv("NOTIFICATION_TOGGLE")
+    if status == false {
+        log.Printf("NOTIFICATION_TOGGLE env is missing.")
+        os.Exit(1)
+    }
+
     bot, err := tgbotapi.NewBotAPI(os.Getenv("TG_TOKEN"))
     if err != nil {
         log.Panic(err)
@@ -30,6 +36,11 @@ func main() {
     var ucfg tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)
     ucfg.Timeout = 60
     updates := bot.GetUpdatesChan(ucfg)
+
+    if notificationToggle == "true" {
+        go client.AssetWatcher(bot)
+    }
+
     for update := range updates {
         if update.Message == nil { // ignore any non-Message updates
             continue
