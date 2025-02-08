@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-    _, status := os.LookupEnv("TG_TOKEN")
+    tgToken, status := os.LookupEnv("TG_TOKEN")
     if !status {
         log.Printf("TG_TOKEN env is missing.")
         os.Exit(1)
@@ -21,7 +21,7 @@ func main() {
         os.Exit(1)
     }
 
-    bot, err := tgbotapi.NewBotAPI(os.Getenv("TG_TOKEN"))
+    bot, err := tgbotapi.NewBotAPI(tgToken)
     if err != nil {
         log.Panic(err)
     }
