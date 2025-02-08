@@ -7,21 +7,16 @@ import (
     "client/client"
 )
 
-/*
-TODO:
-1. Implement bot subscription which would send notifications about upcoming events to user
-*/
-
 func main() {
 
     _, status := os.LookupEnv("TG_TOKEN")
-    if status == false {
+    if !status {
         log.Printf("TG_TOKEN env is missing.")
         os.Exit(1)
     }
 
     notificationToggle, status := os.LookupEnv("NOTIFICATION_TOGGLE")
-    if status == false {
+    if !status {
         log.Printf("NOTIFICATION_TOGGLE env is missing.")
         os.Exit(1)
     }
@@ -30,7 +25,7 @@ func main() {
     if err != nil {
         log.Panic(err)
     }
-    bot.Debug = false
+    bot.Debug = true
 
     // Create chan for telegram updates
     var ucfg tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)

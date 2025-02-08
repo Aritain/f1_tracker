@@ -25,7 +25,7 @@ type RaceData struct {
 
 func AssetWatcher (bot *tgbotapi.BotAPI) {
     notificationID, status := os.LookupEnv("NOTIFICATION_ID")
-    if status == false {
+    if !status {
         log.Printf("NOTIFICATION_ID env is missing.")
         os.Exit(1)
     }
@@ -34,7 +34,7 @@ func AssetWatcher (bot *tgbotapi.BotAPI) {
 	for {
         var raceParsed RaceData
         raceData := FetchData("next_race")
-        if (raceData == "No more races this year 😭") || (strings.Contains(raceData, "To be announced") == true) {
+        if (raceData == "No more races this year 😭") || (strings.Contains(raceData, "To be announced")) {
             time.Sleep(1 * time.Hour)
             continue
         }
@@ -61,13 +61,13 @@ func AssetWatcher (bot *tgbotapi.BotAPI) {
         }
 
         if raceParsed.Sprint != "" {
-            if ProcessMsg(bot, raceParsed.Location, raceParsed.Sprint, raceParsed.SprintES, "🏎 Sprint", notificationIDNum) == true {
+            if ProcessMsg(bot, raceParsed.Location, raceParsed.Sprint, raceParsed.SprintES, raceParsed.SprintInfo, notificationIDNum) {
                 time.Sleep(1 * time.Hour)
                 continue
             }  
         }
 
-        ProcessMsg(bot, raceParsed.Location, raceParsed.Race, raceParsed.RaceES, "🏁 Race", notificationIDNum)
+        ProcessMsg(bot, raceParsed.Location, raceParsed.Race, raceParsed.RaceES, raceParsed.RaceInfo, notificationIDNum)
 		time.Sleep(1 * time.Hour)
 	}
 }
@@ -83,11 +83,13 @@ func ProcessMsg(bot *tgbotapi.BotAPI, eventLocation string, eventDateRaw string,
     eventDate, _ := time.Parse("January 02 15:04", eventDateRaw)
     eventDate = eventDate.AddDate(year- eventDate.Year(), 0, 0)
 
-    if CheckDates(currentDate, eventDate) == true {
+    if CheckDates(currentDate, eventDate) {
         _, _, gbTime := CutData(eventDateRaw, " ")
         msgText := eventType +" tomorrow in\n" + eventLocation + "\n" + "🇬🇧" + gbTime + "\n" + esTime
         msg := tgbotapi.NewMessage(notificationIDNum, msgText)
-        bot.Send(msg)
+        if _, err := bot.Send(msg); err != nil {
+            log.Panic(err)
+        }
         return true
     }
     return false

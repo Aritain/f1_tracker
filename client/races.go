@@ -139,7 +139,7 @@ func RacesParseData(requestBody []byte) string {
 
         if currentDate.Before(englishStartTime) {
             // Hacky, maybe there is a way to make it better
-            if raceTime == false {
+            if !raceTime {
                 elem.Qualifying.Time = TBA
                 elem.Time = TBA
             }
@@ -150,7 +150,7 @@ func RacesParseData(requestBody []byte) string {
             )
             if hasSprintSet(elem) {
                 // Hacky, maybe there is a way to make it better
-                if raceTime == false {
+                if !raceTime {
                     elem.SprintQualifying.Time = TBA
                     elem.Sprint.Time = TBA
                 }
@@ -203,7 +203,7 @@ func ParseTime (rawDate string, rawTime string, fixTime bool) string {
     /*if fixTime == true {
         adjustedTime = adjustedTime.Add(-30 * time.Minute)
     }*/
-    
+
     // Both these valuse come with following format - 2024-10-20 23:00:00 +0100 BST
     spanishTime := adjustedTime.In(spanishLocation)
     englishTime := adjustedTime.In(englishLocation)
@@ -219,10 +219,11 @@ func ParseTime (rawDate string, rawTime string, fixTime bool) string {
 }
 
 
+/* Deprecated
 func rmSeconds(longTime string) string {
     return longTime[:len(longTime)-3]
 }
-
+*/
 
 func fmtDate(longDate string) string {
     longDate = longDate[5:]
