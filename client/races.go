@@ -1,13 +1,14 @@
 package client
 
 import (
-    "fmt"
-    "log"
-    "time"
-    "strconv"
-    "reflect"
-    "encoding/json"
-    "github.com/enescakir/emoji"
+	"encoding/json"
+	"fmt"
+	"log"
+	"reflect"
+	"strconv"
+	"time"
+
+	"github.com/enescakir/emoji"
 )
 
 type RacesResponse struct {
@@ -26,7 +27,7 @@ type RacesMRData struct {
 
 type RaceTable struct {
 	Season string `json:"season"`
-	Race  []Race  `json:"Races"`
+	Race   []Race `json:"Races"`
 }
 
 type Race struct {
@@ -40,9 +41,9 @@ type Race struct {
 	FirstPractice    Session `json:"FirstPractice"`
 	SecondPractice   Session `json:"SecondPractice,omitempty"`
 	ThirdPractice    Session `json:"ThirdPractice,omitempty"`
-    Sprint           Session `json:"Sprint,omitempty"`
+	Sprint           Session `json:"Sprint,omitempty"`
 	Qualifying       Session `json:"Qualifying"`
-    SprintQualifying Session `json:"SprintQualifying,omitempty"`
+	SprintQualifying Session `json:"SprintQualifying,omitempty"`
 }
 
 type Circuit struct {
@@ -64,44 +65,42 @@ type Session struct {
 	Time string `json:"time"`
 }
 
-
 var countryFlagMap = map[string]string{
-    "Japan": emoji.Parse(":jp:"),
-    "Saudi Arabia": emoji.Parse(":saudi_arabia:"),
-    "Azerbaijan": emoji.Parse(":azerbaijan:"),
-    "USA": emoji.Parse(":us:"),
-    "Monaco": emoji.Parse(":monaco:"),
-    "Spain": emoji.Parse(":es:"),
-    "Canada": emoji.Parse(":canada:"),
-    "Austria": emoji.Parse(":austria:"),
-    "UK": emoji.Parse(":gb:"),
-    "Hungary": emoji.Parse(":hungary:"),
-    "Belgium": emoji.Parse(":belgium:"),
-    "Netherlands": emoji.Parse(":netherlands:"),
-    "Italy": emoji.Parse(":it:"),
-    "Singapore": emoji.Parse(":singapore:"),
-    "Qatar": emoji.Parse(":qatar:"),
-    "Mexico": emoji.Parse(":mexico:"),
-    "Brazil": emoji.Parse(":brazil:"),
-    "UAE": emoji.Parse(":united_arab_emirates:"),
-    "United States": emoji.Parse(":us:"),
-    "Bahrain": emoji.Parse(":bahrain:"),
-    "Australia": emoji.Parse(":australia:"),
-    "China": emoji.Parse(":flag-cn:"),
+	"Japan":         emoji.Parse(":jp:"),
+	"Saudi Arabia":  emoji.Parse(":saudi_arabia:"),
+	"Azerbaijan":    emoji.Parse(":azerbaijan:"),
+	"USA":           emoji.Parse(":us:"),
+	"Monaco":        emoji.Parse(":monaco:"),
+	"Spain":         emoji.Parse(":es:"),
+	"Canada":        emoji.Parse(":canada:"),
+	"Austria":       emoji.Parse(":austria:"),
+	"UK":            emoji.Parse(":gb:"),
+	"Hungary":       emoji.Parse(":hungary:"),
+	"Belgium":       emoji.Parse(":belgium:"),
+	"Netherlands":   emoji.Parse(":netherlands:"),
+	"Italy":         emoji.Parse(":it:"),
+	"Singapore":     emoji.Parse(":singapore:"),
+	"Qatar":         emoji.Parse(":qatar:"),
+	"Mexico":        emoji.Parse(":mexico:"),
+	"Brazil":        emoji.Parse(":brazil:"),
+	"UAE":           emoji.Parse(":united_arab_emirates:"),
+	"United States": emoji.Parse(":us:"),
+	"Bahrain":       emoji.Parse(":bahrain:"),
+	"Australia":     emoji.Parse(":australia:"),
+	"China":         emoji.Parse(":flag-cn:"),
 }
-
 
 func RacesParseData(requestBody []byte) string {
 
-    var response string
-    var racesData RacesResponse
-    var raceStartTime string
-    var raceTime bool
-    TBA := "\nTo be announced"
-    err := json.Unmarshal(requestBody, &racesData)
-    if err != nil {
-        log.Println(err)
-    }
+	var response string
+	var racesData RacesResponse
+	var raceStartTime string
+	var raceTime bool
+	TBA := "\nTo be announced"
+	err := json.Unmarshal(requestBody, &racesData)
+	if err != nil {
+		log.Println(err)
+	}
 
 	englishLocation, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -109,79 +108,78 @@ func RacesParseData(requestBody []byte) string {
 		return "Failed to fetch timezone"
 	}
 
-    for _, elem := range racesData.MRData.RaceTable.Race {
-        raceTime = true
-        if hasSprintSet(elem) {
-            elem.Sprint.Time = ParseTime(elem.Date, elem.Sprint.Time, false)
-            elem.SprintQualifying.Time = ParseTime(elem.Date, elem.SprintQualifying.Time, false)
-        }
+	for _, elem := range racesData.MRData.RaceTable.Race {
+		raceTime = true
+		if hasSprintSet(elem) {
+			elem.Sprint.Time = ParseTime(elem.Date, elem.Sprint.Time, false)
+			elem.SprintQualifying.Time = ParseTime(elem.Date, elem.SprintQualifying.Time, false)
+		}
 
-        if len(elem.Time) == 0 {
-            elem.Time = "00:00:00Z"
-            raceTime = false
-        }
-        raceStartTime = elem.Date + "T" + elem.Time
-        raceStart, _ := time.Parse(time.RFC3339, raceStartTime)
-        englishStartTime := raceStart.In(englishLocation)
-        currentDate := time.Now()
+		if len(elem.Time) == 0 {
+			elem.Time = "00:00:00Z"
+			raceTime = false
+		}
+		raceStartTime = elem.Date + "T" + elem.Time
+		raceStart, _ := time.Parse(time.RFC3339, raceStartTime)
+		englishStartTime := raceStart.In(englishLocation)
+		currentDate := time.Now()
 
-        // Uncomment for testing
-        //currentDate, _ := time.Parse("2006-01-02 15:04:05", "2024-11-25 05:00:00")
+		// Uncomment for testing
+		//currentDate, _ := time.Parse("2006-01-02 15:04:05", "2024-11-25 05:00:00")
 
-        elem.Time = ParseTime(elem.Date, elem.Time, false)
-        elem.Qualifying.Time = ParseTime(elem.Date, elem.Qualifying.Time, false)
+		elem.Time = ParseTime(elem.Date, elem.Time, false)
+		elem.Qualifying.Time = ParseTime(elem.Date, elem.Qualifying.Time, false)
 
-        flagEmoji, foundEmoji := countryFlagMap[elem.Circuit.Location.Country]
+		flagEmoji, foundEmoji := countryFlagMap[elem.Circuit.Location.Country]
 
-        if !foundEmoji {
-            flagEmoji = "🏴‍☠️"
-        }
+		if !foundEmoji {
+			flagEmoji = "🏴‍☠️"
+		}
 
-        if currentDate.Before(englishStartTime) {
-            // Hacky, maybe there is a way to make it better
-            if !raceTime {
-                elem.Qualifying.Time = TBA
-                elem.Time = TBA
-            }
-            response = fmt.Sprintf("Next race will take place in:\n%s %s %s\n",
-                flagEmoji,
-                elem.Circuit.Location.Country,
-                elem.Circuit.Location.Locality,
-            )
-            if hasSprintSet(elem) {
-                // Hacky, maybe there is a way to make it better
-                if !raceTime {
-                    elem.SprintQualifying.Time = TBA
-                    elem.Sprint.Time = TBA
-                }
-                response = response + fmt.Sprintf("\n🔫 Sprint Shootout - %s%s \n",
-                    fmtDate(elem.SprintQualifying.Date),
-                    elem.SprintQualifying.Time,
-                )
-                response = response + fmt.Sprintf("\n🏎 Sprint - %s%s \n",
-                    fmtDate(elem.Sprint.Date),
-                    elem.Sprint.Time,
-                )
-            }
-            response = response + fmt.Sprintf("\n⏱ Qualifying - %s%s\n",
-                fmtDate(elem.Qualifying.Date),
-                elem.Qualifying.Time,
-            )
-            response = response + fmt.Sprintf("\n🏁 Race - %s%s",
-                fmtDate(elem.Date),
-                elem.Time,
-            )
-            break
-        }
-    }
-    if len(response) == 0 {
-        response = "No more races this year 😭"
-    }
-    return response
+		if currentDate.Before(englishStartTime) {
+			// Hacky, maybe there is a way to make it better
+			if !raceTime {
+				elem.Qualifying.Time = TBA
+				elem.Time = TBA
+			}
+			response = fmt.Sprintf("Next race will take place in:\n%s %s %s\n",
+				flagEmoji,
+				elem.Circuit.Location.Country,
+				elem.Circuit.Location.Locality,
+			)
+			if hasSprintSet(elem) {
+				// Hacky, maybe there is a way to make it better
+				if !raceTime {
+					elem.SprintQualifying.Time = TBA
+					elem.Sprint.Time = TBA
+				}
+				response = response + fmt.Sprintf("\n🔫 Sprint Shootout - %s%s \n",
+					fmtDate(elem.SprintQualifying.Date),
+					elem.SprintQualifying.Time,
+				)
+				response = response + fmt.Sprintf("\n🏎 Sprint - %s%s \n",
+					fmtDate(elem.Sprint.Date),
+					elem.Sprint.Time,
+				)
+			}
+			response = response + fmt.Sprintf("\n⏱ Qualifying - %s%s\n",
+				fmtDate(elem.Qualifying.Date),
+				elem.Qualifying.Time,
+			)
+			response = response + fmt.Sprintf("\n🏁 Race - %s%s",
+				fmtDate(elem.Date),
+				elem.Time,
+			)
+			break
+		}
+	}
+	if len(response) == 0 {
+		response = "No more races this year 😭"
+	}
+	return response
 }
 
-
-func ParseTime (rawDate string, rawTime string, fixTime bool) string {
+func ParseTime(rawDate string, rawTime string, fixTime bool) string {
 	spanishLocation, err := time.LoadLocation("Europe/Madrid")
 	if err != nil {
 		fmt.Println("Error loading time zone:", err)
@@ -194,30 +192,29 @@ func ParseTime (rawDate string, rawTime string, fixTime bool) string {
 		return "Failed to fetch timezone"
 	}
 
-    var processedTime string
-    // Adjust date and time to follow this format for parsing - 2025-06-01T15:04:05Z
-    dateTime := rawDate + "T" + rawTime
-    adjustedTime, _ := time.Parse(time.RFC3339, dateTime)
-    // Probably not needed anymore, TODO - verify later this year
-    // Adjust time for Sprint Shootouts because API is reporting it with incorrect time
-    /*if fixTime == true {
-        adjustedTime = adjustedTime.Add(-30 * time.Minute)
-    }*/
+	var processedTime string
+	// Adjust date and time to follow this format for parsing - 2025-06-01T15:04:05Z
+	dateTime := rawDate + "T" + rawTime
+	adjustedTime, _ := time.Parse(time.RFC3339, dateTime)
+	// Probably not needed anymore, TODO - verify later this year
+	// Adjust time for Sprint Shootouts because API is reporting it with incorrect time
+	/*if fixTime == true {
+	    adjustedTime = adjustedTime.Add(-30 * time.Minute)
+	}*/
 
-    // Both these valuse come with following format - 2024-10-20 23:00:00 +0100 BST
-    spanishTime := adjustedTime.In(spanishLocation)
-    englishTime := adjustedTime.In(englishLocation)
+	// Both these valuse come with following format - 2024-10-20 23:00:00 +0100 BST
+	spanishTime := adjustedTime.In(spanishLocation)
+	englishTime := adjustedTime.In(englishLocation)
 
-    processedTime = fmt.Sprintf("\n%s%s\n%s%s",
-        countryFlagMap["UK"],
-        englishTime.Format("15:04"),
-        countryFlagMap["Spain"],
-        spanishTime.Format("15:04"),
-    )
+	processedTime = fmt.Sprintf("\n%s%s\n%s%s",
+		countryFlagMap["UK"],
+		englishTime.Format("15:04"),
+		countryFlagMap["Spain"],
+		spanishTime.Format("15:04"),
+	)
 
-    return processedTime
+	return processedTime
 }
-
 
 /* Deprecated
 func rmSeconds(longTime string) string {
@@ -226,13 +223,12 @@ func rmSeconds(longTime string) string {
 */
 
 func fmtDate(longDate string) string {
-    longDate = longDate[5:]
-    monthValue, _ := strconv.Atoi(longDate[:2])
-    return time.Month(monthValue).String() + " " + longDate[3:]
+	longDate = longDate[5:]
+	monthValue, _ := strconv.Atoi(longDate[:2])
+	return time.Month(monthValue).String() + " " + longDate[3:]
 }
 
-
 func hasSprintSet(race Race) bool {
-    zeroValue := reflect.Zero(reflect.TypeOf(race.Sprint)).Interface()
-    return !reflect.DeepEqual(race.Sprint, zeroValue)
+	zeroValue := reflect.Zero(reflect.TypeOf(race.Sprint)).Interface()
+	return !reflect.DeepEqual(race.Sprint, zeroValue)
 }
