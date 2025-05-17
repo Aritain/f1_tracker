@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"strconv"
@@ -19,6 +20,9 @@ type RaceData struct {
 	Race       string
 	RaceES     string
 }
+
+const UPDATE_INTERVAL = 1
+const FILEPATH = "/data/race.json"
 
 // Extremely cursed code, need to rework & maybe use pointers
 // Ideally store next race data locally and fetch that saved data upon user request
@@ -116,4 +120,68 @@ func CheckDates(currentDate time.Time, futureDate time.Time) bool {
 		return true
 	}
 	return false
+}
+
+func RaceUpdater() {
+	params := map[string]string{}
+	headers := map[string]string{}
+	var APIResponse RacesResponse
+	var err error
+	var requestUrl string
+	var raceDate string
+	var dateParsed time.Time
+	var storedRace StoredRace
+	var candidateRace StoredRace
+	for {
+		year, _, _ := time.Now().Date()
+		requestUrl = BASE_URL + strconv.Itoa(year) + RACES_URL
+
+		APIResponse, err = GetRequest[RacesResponse](
+			requestUrl,
+			"xml",
+			params,
+			headers,
+		)
+		if err != nil {
+			log.Println(err)
+			time.Sleep(UPDATE_INTERVAL * time.Hour)
+			continue
+		}
+		for _, race := range APIResponse.MRData.RaceTable.Race {
+			raceDate = race.Date + race.Time
+			dateParsed, _ := time.Parse(time.RFC3339, raceDate)
+			if dateParsed.After(time.Now()) {
+				break
+			}
+		}
+		storedRace = LoadRace()
+		candidateRace = StoredRace{Date: dateParsed}
+		if storedRace != candidateRace {
+			WriteRace(candidateRace)
+		}
+		time.Sleep(UPDATE_INTERVAL * time.Hour)
+
+	}
+}
+
+func RaceChecker() {
+	for {
+		time.Sleep(1 * time.Minute)
+	}
+}
+
+func WriteRace(candidateRace StoredRace) {
+	file, _ := os.Create(FILEPATH)
+	defer file.Close()
+	json.NewEncoder(file).Encode(candidateRace)
+	log.Printf("New race written - %v.", candidateRace)
+}
+
+func LoadRace() (storedRace StoredRace) {
+	data, err := os.ReadFile(FILEPATH)
+	if err != nil {
+		return
+	}
+	_ = json.Unmarshal(data, &storedRace)
+	return
 }

@@ -11,60 +11,6 @@ import (
 	"github.com/enescakir/emoji"
 )
 
-type RacesResponse struct {
-	MRData RacesMRData `json:"MRData"`
-}
-
-type RacesMRData struct {
-	XMLNS     string    `json:"xmlns"`
-	Series    string    `json:"series"`
-	URL       string    `json:"url"`
-	Limit     string    `json:"limit"`
-	Offset    string    `json:"offset"`
-	Total     string    `json:"total"`
-	RaceTable RaceTable `json:"RaceTable"`
-}
-
-type RaceTable struct {
-	Season string `json:"season"`
-	Race   []Race `json:"Races"`
-}
-
-type Race struct {
-	Season           string  `json:"season"`
-	Round            string  `json:"round"`
-	URL              string  `json:"url"`
-	RaceName         string  `json:"raceName"`
-	Circuit          Circuit `json:"Circuit"`
-	Date             string  `json:"date"`
-	Time             string  `json:"time"`
-	FirstPractice    Session `json:"FirstPractice"`
-	SecondPractice   Session `json:"SecondPractice,omitempty"`
-	ThirdPractice    Session `json:"ThirdPractice,omitempty"`
-	Sprint           Session `json:"Sprint,omitempty"`
-	Qualifying       Session `json:"Qualifying"`
-	SprintQualifying Session `json:"SprintQualifying,omitempty"`
-}
-
-type Circuit struct {
-	CircuitID   string   `json:"circuitId"`
-	URL         string   `json:"url"`
-	CircuitName string   `json:"circuitName"`
-	Location    Location `json:"Location"`
-}
-
-type Location struct {
-	Lat      string `json:"lat"`
-	Long     string `json:"long"`
-	Locality string `json:"locality"`
-	Country  string `json:"country"`
-}
-
-type Session struct {
-	Date string `json:"date"`
-	Time string `json:"time"`
-}
-
 var countryFlagMap = map[string]string{
 	"Japan":         emoji.Parse(":jp:"),
 	"Saudi Arabia":  emoji.Parse(":saudi_arabia:"),

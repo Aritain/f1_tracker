@@ -6,47 +6,6 @@ import (
 	"strings"
 )
 
-type TeamsResponse struct {
-	MRData TeamsMRData `json:"MRData"`
-}
-
-type TeamsMRData struct {
-	XMLNS          string             `json:"xmlns"`
-	Series         string             `json:"series"`
-	URL            string             `json:"url"`
-	Limit          string             `json:"limit"`
-	Offset         string             `json:"offset"`
-	Total          string             `json:"total"`
-	StandingsTable TeamStandingsTable `json:"StandingsTable"`
-}
-
-type TeamStandingsTable struct {
-	Season         string               `json:"season"`
-	Round          string               `json:"round"`
-	StandingsLists []TeamStandingsLists `json:"StandingsLists"`
-}
-
-type TeamStandingsLists struct {
-	Season               string                 `json:"season"`
-	Round                string                 `json:"round"`
-	ConstructorStandings []ConstructorStandings `json:"ConstructorStandings"`
-}
-
-type ConstructorStandings struct {
-	Position     string          `json:"position"`
-	PositionText string          `json:"positionText"`
-	Points       string          `json:"points"`
-	Wins         string          `json:"wins"`
-	Constructor  TeamConstructor `json:"Constructor"`
-}
-
-type TeamConstructor struct {
-	ConstructorID string `json:"constructorId"`
-	URL           string `json:"url"`
-	Name          string `json:"name"`
-	Nationality   string `json:"nationality"`
-}
-
 func TeamsParseData(requestBody []byte) string {
 	var teamsData TeamsResponse
 	var longestTeam int

@@ -33,6 +33,9 @@ func main() {
 	ucfg.Timeout = 60
 	updates := bot.GetUpdatesChan(ucfg)
 
+	go client.RaceUpdater()
+	go client.RaceChecker()
+
 	if notificationToggle == "true" {
 		go client.AssetWatcher(bot)
 	}
