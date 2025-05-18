@@ -1,11 +1,7 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/enescakir/emoji"
@@ -36,145 +32,89 @@ var countryFlagMap = map[string]string{
 	"China":         emoji.Parse(":flag-cn:"),
 }
 
-func RacesParseData(requestBody []byte) string {
+// mode = query, sprint, race
+func PrepRaceMessage(race ParsedRace, mode string) (text string) {
+	var dummyTime time.Time
+	var ukTime time.Time
+	var spTime time.Time
 
-	var response string
-	var racesData RacesResponse
-	var raceStartTime string
-	var raceTime bool
-	TBA := "\nTo be announced"
-	err := json.Unmarshal(requestBody, &racesData)
-	if err != nil {
-		log.Println(err)
+	// Prepare first line
+	var topLine string
+	switch mode {
+	case "sprint":
+		topLine = "🏎 Sprint today in:\n"
+	case "race":
+		topLine = "🏁 Race today in:\n"
+	}
+	text += topLine
+
+	// Prepare flag + location
+	flagEmoji, foundEmoji := countryFlagMap[race.Country]
+
+	if !foundEmoji {
+		flagEmoji = "🏴‍☠️"
+	}
+	locationLine := fmt.Sprintf("%s %s %s\n", flagEmoji, race.Country, race.City)
+	text += locationLine
+
+	// Prep sprint time
+	if mode == "sprint" {
+		ukTime, spTime = LocalTime(race.SprintDate)
 	}
 
-	englishLocation, err := time.LoadLocation("Europe/London")
-	if err != nil {
-		fmt.Println("Error loading time zone:", err)
-		return "Failed to fetch timezone"
+	// Prep race time
+	if mode == "race" {
+		ukTime, spTime = LocalTime(race.RaceDate)
 	}
 
-	for _, elem := range racesData.MRData.RaceTable.Race {
-		raceTime = true
-		if hasSprintSet(elem) {
-			elem.Sprint.Time = ParseTime(elem.Date, elem.Sprint.Time, false)
-			elem.SprintQualifying.Time = ParseTime(elem.Date, elem.SprintQualifying.Time, false)
-		}
-
-		if len(elem.Time) == 0 {
-			elem.Time = "00:00:00Z"
-			raceTime = false
-		}
-		raceStartTime = elem.Date + "T" + elem.Time
-		raceStart, _ := time.Parse(time.RFC3339, raceStartTime)
-		englishStartTime := raceStart.In(englishLocation)
-		currentDate := time.Now()
-
-		// Uncomment for testing
-		//currentDate, _ := time.Parse("2006-01-02 15:04:05", "2024-11-25 05:00:00")
-
-		elem.Time = ParseTime(elem.Date, elem.Time, false)
-		elem.Qualifying.Time = ParseTime(elem.Date, elem.Qualifying.Time, false)
-
-		flagEmoji, foundEmoji := countryFlagMap[elem.Circuit.Location.Country]
-
-		if !foundEmoji {
-			flagEmoji = "🏴‍☠️"
-		}
-
-		if currentDate.Before(englishStartTime) {
-			// Hacky, maybe there is a way to make it better
-			if !raceTime {
-				elem.Qualifying.Time = TBA
-				elem.Time = TBA
-			}
-			response = fmt.Sprintf("Next race will take place in:\n%s %s %s\n",
-				flagEmoji,
-				elem.Circuit.Location.Country,
-				elem.Circuit.Location.Locality,
-			)
-			if hasSprintSet(elem) {
-				// Hacky, maybe there is a way to make it better
-				if !raceTime {
-					elem.SprintQualifying.Time = TBA
-					elem.Sprint.Time = TBA
-				}
-				response = response + fmt.Sprintf("\n🔫 Sprint Shootout - %s%s \n",
-					fmtDate(elem.SprintQualifying.Date),
-					elem.SprintQualifying.Time,
-				)
-				response = response + fmt.Sprintf("\n🏎 Sprint - %s%s \n",
-					fmtDate(elem.Sprint.Date),
-					elem.Sprint.Time,
-				)
-			}
-			response = response + fmt.Sprintf("\n⏱ Qualifying - %s%s\n",
-				fmtDate(elem.Qualifying.Date),
-				elem.Qualifying.Time,
-			)
-			response = response + fmt.Sprintf("\n🏁 Race - %s%s",
-				fmtDate(elem.Date),
-				elem.Time,
-			)
-			break
-		}
+	// Prepare sprint/race msg
+	if mode == "sprint" || mode == "race" {
+		ukHours := ukTime.Format("15:04")
+		spHours := spTime.Format("15:04")
+		text += fmt.Sprintf("🇬🇧 %s\n🇪🇸 %s", ukHours, spHours)
+		return
 	}
-	if len(response) == 0 {
-		response = "No more races this year 😭"
+
+	// Query message block
+
+	if race.RaceDate == dummyTime {
+		text = "No more races this year 😭"
+		return
 	}
-	return response
+
+	if race.ShootDate != dummyTime {
+		text += "\n🔫 Shootout - "
+		ukTime, spTime = LocalTime(race.ShootDate)
+		text += ParseDateTime(ukTime, spTime)
+
+		text += "\n🏎 Sprint - "
+		ukTime, spTime = LocalTime(race.SprintDate)
+		text += ParseDateTime(ukTime, spTime)
+	}
+
+	text += "\n⏱ Qualifying - "
+	ukTime, spTime = LocalTime(race.QualDate)
+	text += ParseDateTime(ukTime, spTime)
+
+	text += "\n🏁 Race - "
+	ukTime, spTime = LocalTime(race.RaceDate)
+	text += ParseDateTime(ukTime, spTime)
+
+	return
 }
 
-func ParseTime(rawDate string, rawTime string, fixTime bool) string {
-	spanishLocation, err := time.LoadLocation("Europe/Madrid")
-	if err != nil {
-		fmt.Println("Error loading time zone:", err)
-		return "Failed to fetch timezone"
-	}
-
-	englishLocation, err := time.LoadLocation("Europe/London")
-	if err != nil {
-		fmt.Println("Error loading time zone:", err)
-		return "Failed to fetch timezone"
-	}
-
-	var processedTime string
-	// Adjust date and time to follow this format for parsing - 2025-06-01T15:04:05Z
-	dateTime := rawDate + "T" + rawTime
-	adjustedTime, _ := time.Parse(time.RFC3339, dateTime)
-	// Probably not needed anymore, TODO - verify later this year
-	// Adjust time for Sprint Shootouts because API is reporting it with incorrect time
-	/*if fixTime == true {
-	    adjustedTime = adjustedTime.Add(-30 * time.Minute)
-	}*/
-
-	// Both these valuse come with following format - 2024-10-20 23:00:00 +0100 BST
-	spanishTime := adjustedTime.In(spanishLocation)
-	englishTime := adjustedTime.In(englishLocation)
-
-	processedTime = fmt.Sprintf("\n%s%s\n%s%s",
-		countryFlagMap["UK"],
-		englishTime.Format("15:04"),
-		countryFlagMap["Spain"],
-		spanishTime.Format("15:04"),
-	)
-
-	return processedTime
+func ParseDateTime(ukTime time.Time, spTime time.Time) (text string) {
+	ukHours := ukTime.Format("15:04")
+	spHours := spTime.Format("15:04")
+	date := ukTime.Format("January 2")
+	text = fmt.Sprintf("%s\n🇬🇧 %s\n🇪🇸 %s\n", date, ukHours, spHours)
+	return
 }
 
-/* Deprecated
-func rmSeconds(longTime string) string {
-    return longTime[:len(longTime)-3]
-}
-*/
-
-func fmtDate(longDate string) string {
-	longDate = longDate[5:]
-	monthValue, _ := strconv.Atoi(longDate[:2])
-	return time.Month(monthValue).String() + " " + longDate[3:]
-}
-
-func hasSprintSet(race Race) bool {
-	zeroValue := reflect.Zero(reflect.TypeOf(race.Sprint)).Interface()
-	return !reflect.DeepEqual(race.Sprint, zeroValue)
+func LocalTime(date time.Time) (ukTime time.Time, spTime time.Time) {
+	englishLocation, _ := time.LoadLocation("Europe/London")
+	spanishLocation, _ := time.LoadLocation("Europe/Madrid")
+	ukTime = date.In(englishLocation)
+	spTime = date.In(spanishLocation)
+	return
 }

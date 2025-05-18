@@ -1,7 +1,7 @@
 package client
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -28,7 +28,7 @@ func FetchData(userRequest string) string {
 	case userRequest == "drivers":
 		requestUrl = requestUrl + DRIVERS_URL
 	case userRequest == "next_race":
-		requestUrl = requestUrl + RACES_URL
+		// Do nothing
 	default:
 		response = "Command not recognised, try these:\n" +
 			"/drivers - show drivers leaderboard\n" +
@@ -41,7 +41,7 @@ func FetchData(userRequest string) string {
 		log.Println(err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
 	}
@@ -51,7 +51,8 @@ func FetchData(userRequest string) string {
 	case userRequest == "drivers":
 		response = DriversParseData(body)
 	case userRequest == "next_race":
-		response = RacesParseData(body)
+		race := LoadRace()
+		response = PrepRaceMessage(race, "query")
 	}
 
 	return response

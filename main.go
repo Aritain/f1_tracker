@@ -34,10 +34,8 @@ func main() {
 	updates := bot.GetUpdatesChan(ucfg)
 
 	go client.RaceUpdater()
-	go client.RaceChecker()
-
 	if notificationToggle == "true" {
-		go client.AssetWatcher(bot)
+		go client.RaceChecker()
 	}
 
 	for update := range updates {

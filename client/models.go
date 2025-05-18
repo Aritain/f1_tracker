@@ -21,11 +21,11 @@ type Race struct {
 	Date             string  `json:"date"`
 	Time             string  `json:"time"`
 	FirstPractice    Session `json:"FirstPractice"`
-	SecondPractice   Session `json:"SecondPractice,omitempty"`
-	ThirdPractice    Session `json:"ThirdPractice,omitempty"`
-	Sprint           Session `json:"Sprint,omitempty"`
+	SecondPractice   Session `json:"SecondPractice"`
+	ThirdPractice    Session `json:"ThirdPractice"`
+	Sprint           Session `json:"Sprint"`
 	Qualifying       Session `json:"Qualifying"`
-	SprintQualifying Session `json:"SprintQualifying,omitempty"`
+	SprintQualifying Session `json:"SprintQualifying"`
 }
 
 type Circuit struct {
@@ -100,6 +100,13 @@ type Driver struct {
 }
 
 // Stored race
-type StoredRace struct {
-	Date time.Time `json:"date"`
+type ParsedRace struct {
+	Country       string    `json:"Country"`
+	City          string    `json:"City"`
+	RaceDate      time.Time `json:"RaceDate"`
+	QualDate      time.Time `json:"QualDate"`
+	ShootDate     time.Time `json:"ShootDate"`
+	SprintDate    time.Time `json:"SprintDate"`
+	RaceTrigger   bool      `json:"RaceTrigger"`
+	SprintTrigger bool      `json:"SprintTrigger"`
 }
