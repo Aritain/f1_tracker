@@ -7,6 +7,7 @@ import (
 )
 
 const DATE_FORMAT = "2006-01-02 15:04:05Z"
+const TIME_OFFSET = 2
 
 func RaceUpdater() {
 	params := map[string]string{}
@@ -62,19 +63,21 @@ func RaceChecker() {
 			time.Sleep(30 * time.Minute)
 			continue
 		}
-		now := time.Now()
-		twoHoursAgo := now.Add(-2 * time.Hour)
+		offsetNow := time.Now().Add(TIME_OFFSET * time.Hour)
+		sprintCheck := isSameDateTime(race.SprintDate.UTC().Add(TIME_OFFSET*time.Hour), offsetNow.UTC())
+		raceCheck := isSameDateTime(race.SprintDate.UTC().Add(TIME_OFFSET*time.Hour), offsetNow.UTC())
+
 		// For tests
 		//t := "2025-05-03T16:00:00Z"
 		//twoHoursAgo, _ := time.Parse(time.RFC3339, t)
-		if isSameDateTime(race.SprintDate.UTC(), twoHoursAgo.UTC()) && !race.SprintTrigger {
+		if sprintCheck && !race.SprintTrigger {
 			race.SprintTrigger = true
 			WriteRace(race)
 			msg = PrepRaceMessage(race, "sprint")
 			SendTGMessage(msg)
 			continue
 		}
-		if isSameDateTime(race.RaceDate.UTC(), twoHoursAgo.UTC()) && !race.RaceTrigger {
+		if raceCheck && !race.RaceTrigger {
 			race.RaceTrigger = true
 			WriteRace(race)
 			msg = PrepRaceMessage(race, "race")
