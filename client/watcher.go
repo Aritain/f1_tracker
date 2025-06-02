@@ -7,7 +7,6 @@ import (
 )
 
 const DATE_FORMAT = "2006-01-02 15:04:05Z"
-const TIME_OFFSET = 2
 
 func RaceUpdater() {
 	params := map[string]string{}
@@ -60,16 +59,17 @@ func RaceChecker() {
 		race := LoadRace()
 		// Skip further checks if particular event was already notified of
 		if race.SprintTrigger && race.RaceTrigger {
-			time.Sleep(30 * time.Minute)
+			time.Sleep(30 * time.Minute) // Wait 30 minutes
 			continue
 		}
-		offsetNow := time.Now().Add(TIME_OFFSET * time.Hour)
-		sprintCheck := isSameDateTime(race.SprintDate.UTC().Add(TIME_OFFSET*time.Hour), offsetNow.UTC())
-		raceCheck := isSameDateTime(race.SprintDate.UTC().Add(TIME_OFFSET*time.Hour), offsetNow.UTC())
-
+		// Add two hours to time.now to notify about the event 2 hours in advance
+		offsetNow := time.Now().Add(2 * time.Hour)
 		// For tests
-		//t := "2025-05-03T16:00:00Z"
-		//twoHoursAgo, _ := time.Parse(time.RFC3339, t)
+		//t := "2025-06-15T18:00:00Z"
+		//offsetNow, _ := time.Parse(time.RFC3339, t)
+		sprintCheck := isSameDateTime(race.SprintDate.UTC(), offsetNow.UTC())
+		raceCheck := isSameDateTime(race.RaceDate.UTC(), offsetNow.UTC())
+
 		if sprintCheck && !race.SprintTrigger {
 			race.SprintTrigger = true
 			WriteRace(race)
@@ -85,6 +85,6 @@ func RaceChecker() {
 			continue
 		}
 
-		time.Sleep(15 * time.Second)
+		time.Sleep(15 * time.Second) // Wait 15 seconds
 	}
 }
